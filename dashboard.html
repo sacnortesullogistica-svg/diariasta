@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Sistema de Diárias</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ================= SIDEBAR ================= -->
+<div class="sidebar">
+  <h3>Sistema</h3>
+  <button onclick="mostrar('diaristas')">Diaristas</button>
+  <button onclick="mostrar('diarias')">Diárias</button>
+  <button onclick="mostrar('fechamento')">Fechamento</button>
+</div>
+
+<!-- ================= CONTEÚDO ================= -->
+<div class="content">
+
+<!-- ================= DIARISTAS ================= -->
+<section id="diaristas">
+  <h2>Diaristas</h2>
+
+  <input type="hidden" id="diaristaId">
+
+  <div class="form-diarista">
+    <input id="nome" placeholder="Nome completo">
+
+    <input
+      id="telefone"
+      placeholder="(00) 00000-0000"
+      maxlength="15"
+      oninput="formatarTelefone(this)"
+    >
+
+    <input id="pix" placeholder="Chave Pix">
+
+    <button onclick="salvarDiarista()">Salvar</button>
+  </div>
+
+  <table class="tabela">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Telefone</th>
+        <th>Pix</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="listaDiaristas"></tbody>
+  </table>
+</section>
+
+<!-- ================= DIÁRIAS ================= -->
+<section id="diarias" hidden>
+  <h2>Diárias</h2>
+
+  <!-- TIPOS -->
+  <h3>Tipos de diária</h3>
+
+  <input type="hidden" id="tipoId">
+  <input id="nomeTipo" placeholder="Ex: Diária inteira">
+  <input id="valorTipo" type="number" placeholder="Valor (R$)">
+  <button onclick="salvarTipo()">Salvar tipo</button>
+
+  <table class="tabela">
+    <thead>
+      <tr>
+        <th>Tipo</th>
+        <th>Valor</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="listaTipos"></tbody>
+  </table>
+
+  <hr>
+
+  <!-- LANÇAMENTO -->
+  <h3>Lançar diária</h3>
+
+  <input type="hidden" id="lancamentoId">
+
+  <label>Diarista</label>
+  <select id="diaristaSelect"></select>
+
+  <label>Tipo de diária</label>
+  <select id="tipoSelect" onchange="atualizarValor()"></select>
+
+  <label>Data trabalhada</label>
+  <input type="date" id="dataDiaria">
+
+  <label>Valor (R$)</label>
+  <input id="valorLancamento" readonly>
+
+  <button onclick="salvarLancamento()">Salvar diária</button>
+
+  <table class="tabela">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Diarista</th>
+        <th>Tipo</th>
+        <th>Valor</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="listaLancamentos"></tbody>
+  </table>
+</section>
+
+<!-- ================= FECHAMENTO ================= -->
+<section id="fechamento" hidden>
+  <h2>Fechamento Semanal</h2>
+
+  <label>Data inicial</label>
+  <input type="date" id="dataInicio">
+
+  <label>Data final</label>
+  <input type="date" id="dataFim">
+
+  <br><br>
+
+  <button onclick="gerarFechamento()">Gerar fechamento</button>
+  <button onclick="gerarPDF()">Gerar PDF</button>
+
+  <br><br>
+
+  <table class="tabela" id="tabelaFechamento">
+    <thead id="fechamentoHead"></thead>
+    <tbody id="resultadoFechamento"></tbody>
+  </table>
+
+  <br>
+
+  <label>Observação do fechamento</label><br>
+  <textarea
+    id="observacao"
+    rows="3"
+    placeholder="Descreva o motivo do valor extra..."
+    style="width:100%;max-width:600px;"
+  ></textarea>
+</section>
+
+</div>
+
+<!-- jsPDF -->
+<script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+<!-- AutoTable (ESSENCIAL) -->
+<script src="https://unpkg.com/jspdf-autotable@3.5.29/dist/jspdf.plugin.autotable.min.js"></script>
+
+<!-- ================= SCRIPTS DO SISTEMA ================= -->
+<script type="module">
+  import "./js/diaristas.js";
+  import "./js/diarias.js";
+  import "./js/fechamento.js";
+
+  window.mostrar = function (id) {
+    document.querySelectorAll("section").forEach(sec => sec.hidden = true);
+    document.getElementById(id).hidden = false;
+  };
+</script>
+
+</body>
+</html>
