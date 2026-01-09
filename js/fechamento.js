@@ -35,7 +35,7 @@ window.gerarFechamento = async function () {
   datas.forEach(dt => {
     ths += `<th>${dt.split("-").reverse().join("/")}</th>`;
   });
-  ths += "<th>Extra</th><th>Total</th></tr>";
+  ths += "<th>Extra</th><th>D. Extra (R$)</th><th>Total</th></tr>";
   head.innerHTML = ths;
 
   // 🔹 DIARISTAS
@@ -57,7 +57,7 @@ window.gerarFechamento = async function () {
 
   // 🔹 MONTAR TABELA
   Object.entries(diaristas).forEach(([id, d]) => {
-    let total = 0;
+    let totalDiarias = 0;
 
     let linha = `<tr>
       <td>${d.nome}</td>
@@ -66,23 +66,51 @@ window.gerarFechamento = async function () {
 
     datas.forEach(dt => {
       if (mapa[id] && mapa[id][dt]) {
-        total += mapa[id][dt];
+        totalDiarias += mapa[id][dt];
         linha += `<td>R$ ${mapa[id][dt].toFixed(2)}</td>`;
       } else {
-        linha += `<td>Não</td>`;
+        linha += `<td>NAO</td>`;
       }
     });
 
-    // 🔹 EXTRA (APENAS INFORMATIVO)
     linha += `
+      <!-- EXTRA INFORMATIVO -->
       <td>
-        <input type="number" value="0" min="0" style="width:70px;text-align:center">
+        <input
+          type="number"
+          value="0"
+          min="0"
+          style="width:70px;text-align:center"
+        >
       </td>
-      <td class="total">R$ ${total.toFixed(2)}</td>
+
+      <!-- D.EXTRA QUE SOMA -->
+      <td>
+        <input
+          type="number"
+          value="0"
+          min="0"
+          style="width:90px;text-align:center"
+          oninput="atualizarTotal(this, ${totalDiarias})"
+        >
+      </td>
+
+      <td class="total">
+        R$ ${totalDiarias.toFixed(2)}
+      </td>
     </tr>`;
 
     body.innerHTML += linha;
   });
+};
+
+/* ================= ATUALIZAR TOTAL ================= */
+window.atualizarTotal = function (input, totalDiarias) {
+  const dExtra = Number(input.value || 0);
+  const tdTotal = input.closest("tr").querySelector(".total");
+
+  const somaFinal = totalDiarias + dExtra;
+  tdTotal.innerText = `R$ ${somaFinal.toFixed(2)}`;
 };
 
 /* ================= GERAR PDF ================= */
@@ -109,7 +137,6 @@ window.gerarPDF = function () {
     22
   );
 
-  // 🔹 CAPTURAR TABELA
   const head = [];
   document.querySelectorAll("#fechamentoHead th").forEach(th => {
     head.push(th.innerText);
@@ -120,23 +147,17 @@ window.gerarPDF = function () {
     const row = [];
     tr.querySelectorAll("td").forEach(td => {
       const input = td.querySelector("input");
-      row.push(input ? input.value : td.innerText);
+      row.push(input ? td.querySelector("input").value : td.innerText);
     });
     body.push(row);
   });
-
-  if (body.length === 0) {
-    alert("Nenhum dado para gerar PDF");
-    return;
-  }
 
   doc.autoTable({
     startY: 28,
     head: [head],
     body,
     theme: "grid",
-    styles: { fontSize: 8, halign: "center" },
-    headStyles: { fillColor: [30, 144, 255], textColor: 255 }
+    styles: { fontSize: 8, halign: "center" }
   });
 
   let y = doc.lastAutoTable.finalY + 10;
