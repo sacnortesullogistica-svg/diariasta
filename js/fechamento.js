@@ -20,7 +20,7 @@ window.gerarFechamento = async function () {
     return;
   }
 
-  // 🔹 LISTA DE DATAS
+  /* 🔹 LISTA DE DATAS */
   const datas = [];
   let d = new Date(inicio);
   const dFim = new Date(fim);
@@ -30,20 +30,20 @@ window.gerarFechamento = async function () {
     d.setDate(d.getDate() + 1);
   }
 
-  // 🔹 CABEÇALHO
+  /* 🔹 CABEÇALHO */
   let ths = "<tr><th>Diarista</th><th>Pix</th>";
   datas.forEach(dt => {
     ths += `<th>${dt.split("-").reverse().join("/")}</th>`;
   });
-  ths += "<th>Extra</th><th>D. Extra (R$)</th><th>Total</th></tr>";
+  ths += "<th>Extra</th><th>D. Extra (R$)</th><th>Desconto (R$)</th><th>Total</th></tr>";
   head.innerHTML = ths;
 
-  // 🔹 DIARISTAS
+  /* 🔹 DIARISTAS */
   const diaristasSnap = await getDocs(collection(db, "diaristas"));
   const diaristas = {};
   diaristasSnap.forEach(d => diaristas[d.id] = d.data());
 
-  // 🔹 LANÇAMENTOS
+  /* 🔹 LANÇAMENTOS */
   const lancSnap = await getDocs(collection(db, "lancamentos_diaria"));
   const mapa = {};
 
@@ -55,62 +55,87 @@ window.gerarFechamento = async function () {
     }
   });
 
-  // 🔹 MONTAR TABELA
-  Object.entries(diaristas).forEach(([id, d]) => {
-    let totalDiarias = 0;
+  /* 🔹 MONTAR TABELA */
+  Object.entries(diaristas)
+    .sort((a, b) => a[1].nome.localeCompare(b[1].nome, "pt-BR"))
+    .forEach(([id, d]) => {
 
-    let linha = `<tr>
-      <td>${d.nome}</td>
-      <td>${d.pix || "-"}</td>
-    `;
+      let totalDiarias = 0;
 
-    datas.forEach(dt => {
-      if (mapa[id] && mapa[id][dt]) {
-        totalDiarias += mapa[id][dt];
-        linha += `<td>R$ ${mapa[id][dt].toFixed(2)}</td>`;
-      } else {
-        linha += `<td>NAO</td>`;
-      }
+      let linha = `<tr>
+        <td>${d.nome}</td>
+        <td>${d.pix || "-"}</td>
+      `;
+
+      datas.forEach(dt => {
+        if (mapa[id] && mapa[id][dt]) {
+          totalDiarias += mapa[id][dt];
+          linha += `<td>R$ ${mapa[id][dt].toFixed(2)}</td>`;
+        } else {
+          linha += `<td>NAO</td>`;
+        }
+      });
+
+      linha += `
+        <!-- EXTRA (QTD OU INFO) -->
+        <td>
+          <input
+            type="number"
+            value="0"
+            min="0"
+            style="width:70px;text-align:center"
+          >
+        </td>
+
+        <!-- D.EXTRA -->
+        <td>
+          <input
+            type="number"
+            value="0"
+            min="0"
+            style="width:90px;text-align:center"
+            oninput="atualizarTotal(this)"
+          >
+        </td>
+
+        <!-- DESCONTO -->
+        <td>
+          <input
+            type="number"
+            value="0"
+            min="0"
+            style="width:90px;text-align:center"
+            oninput="atualizarTotal(this)"
+          >
+        </td>
+
+        <!-- TOTAL -->
+        <td class="total" data-base="${totalDiarias}">
+          R$ ${totalDiarias.toFixed(2)}
+        </td>
+      </tr>`;
+
+      body.innerHTML += linha;
     });
-
-    linha += `
-      <!-- EXTRA INFORMATIVO -->
-      <td>
-        <input
-          type="number"
-          value="0"
-          min="0"
-          style="width:70px;text-align:center"
-        >
-      </td>
-
-      <!-- D.EXTRA QUE SOMA -->
-      <td>
-        <input
-          type="number"
-          value="0"
-          min="0"
-          style="width:90px;text-align:center"
-          oninput="atualizarTotal(this, ${totalDiarias})"
-        >
-      </td>
-
-      <td class="total">
-        R$ ${totalDiarias.toFixed(2)}
-      </td>
-    </tr>`;
-
-    body.innerHTML += linha;
-  });
 };
 
 /* ================= ATUALIZAR TOTAL ================= */
-window.atualizarTotal = function (input, totalDiarias) {
-  const dExtra = Number(input.value || 0);
-  const tdTotal = input.closest("tr").querySelector(".total");
+window.atualizarTotal = function (input) {
+  const tr = input.closest("tr");
 
-  const somaFinal = totalDiarias + dExtra;
-  tdTotal.innerText = `R$ ${somaFinal.toFixed(2)}`;
+  const totalBase = Number(
+    tr.querySelector(".total").dataset.base
+  );
+
+  const inputs = tr.querySelectorAll("input");
+
+  const valorExtra = Number(inputs[1].value || 0);
+  const desconto = Number(inputs[2].value || 0);
+
+  const totalFinal = totalBase + valorExtra - desconto;
+
+  tr.querySelector(".total").innerText =
+    `R$ ${totalFinal.toFixed(2)}`;
 };
 
 /* ================= GERAR PDF ================= */
@@ -147,7 +172,7 @@ window.gerarPDF = function () {
     const row = [];
     tr.querySelectorAll("td").forEach(td => {
       const input = td.querySelector("input");
-      row.push(input ? td.querySelector("input").value : td.innerText);
+      row.push(input ? input.value : td.innerText);
     });
     body.push(row);
   });
