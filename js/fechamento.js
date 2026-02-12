@@ -6,6 +6,7 @@ import {
 
 /* ================= FECHAMENTO ================= */
 window.gerarFechamento = async function () {
+
   const inicio = document.getElementById("dataInicio").value;
   const fim = document.getElementById("dataFim").value;
 
@@ -77,39 +78,24 @@ window.gerarFechamento = async function () {
       });
 
       linha += `
-        <!-- EXTRA (QTD OU INFO) -->
         <td>
-          <input
-            type="number"
-            value="0"
-            min="0"
+          <input type="number" value="0" min="0"
             style="width:70px;text-align:center"
-          >
+            oninput="atualizarTotal(this)">
         </td>
 
-        <!-- D.EXTRA -->
         <td>
-          <input
-            type="number"
-            value="0"
-            min="0"
+          <input type="number" value="0" min="0"
             style="width:90px;text-align:center"
-            oninput="atualizarTotal(this)"
-          >
+            oninput="atualizarTotal(this)">
         </td>
 
-        <!-- DESCONTO -->
         <td>
-          <input
-            type="number"
-            value="0"
-            min="0"
+          <input type="number" value="0" min="0"
             style="width:90px;text-align:center"
-            oninput="atualizarTotal(this)"
-          >
+            oninput="atualizarTotal(this)">
         </td>
 
-        <!-- TOTAL -->
         <td class="total" data-base="${totalDiarias}">
           R$ ${totalDiarias.toFixed(2)}
         </td>
@@ -117,10 +103,24 @@ window.gerarFechamento = async function () {
 
       body.innerHTML += linha;
     });
+
+  /* 🔹 LINHA TOTAL FINAL */
+  body.innerHTML += `
+    <tr style="background:#e6e6e6;font-weight:bold;font-size:16px">
+      <td colspan="${2 + datas.length + 3}" style="text-align:right">
+        TOTAL GASTO COM DIÁRIAS:
+      </td>
+      <td id="totalGeralFinal">
+        R$ ${calcularTotalGeral().toFixed(2)}
+      </td>
+    </tr>
+  `;
 };
+
 
 /* ================= ATUALIZAR TOTAL ================= */
 window.atualizarTotal = function (input) {
+
   const tr = input.closest("tr");
 
   const totalBase = Number(
@@ -129,17 +129,47 @@ window.atualizarTotal = function (input) {
 
   const inputs = tr.querySelectorAll("input");
 
-  const valorExtra = Number(inputs[1].value || 0);
+  const extra = Number(inputs[1].value || 0);
   const desconto = Number(inputs[2].value || 0);
 
-  const totalFinal = totalBase + valorExtra - desconto;
+  const totalFinal = totalBase + extra - desconto;
 
   tr.querySelector(".total").innerText =
     `R$ ${totalFinal.toFixed(2)}`;
+
+  atualizarTotalGeral();
 };
+
+
+/* ================= CALCULAR TOTAL GERAL ================= */
+function calcularTotalGeral() {
+
+  let soma = 0;
+
+  document.querySelectorAll("#resultadoFechamento .total")
+    .forEach(td => {
+      soma += Number(
+        td.innerText.replace("R$", "").trim()
+      );
+    });
+
+  return soma;
+}
+
+function atualizarTotalGeral() {
+
+  const totalFinal = document.getElementById("totalGeralFinal");
+
+  if (totalFinal) {
+    totalFinal.innerText =
+      `R$ ${calcularTotalGeral().toFixed(2)}`;
+  }
+}
+
 
 /* ================= GERAR PDF ================= */
 window.gerarPDF = function () {
+
   if (!window.jspdf || !window.jspdf.jsPDF) {
     alert("jsPDF não carregado");
     return;
@@ -163,19 +193,21 @@ window.gerarPDF = function () {
   );
 
   const head = [];
-  document.querySelectorAll("#fechamentoHead th").forEach(th => {
-    head.push(th.innerText);
-  });
+  document.querySelectorAll("#fechamentoHead th")
+    .forEach(th => head.push(th.innerText));
 
   const body = [];
-  document.querySelectorAll("#resultadoFechamento tr").forEach(tr => {
-    const row = [];
-    tr.querySelectorAll("td").forEach(td => {
-      const input = td.querySelector("input");
-      row.push(input ? input.value : td.innerText);
+  document.querySelectorAll("#resultadoFechamento tr")
+    .forEach(tr => {
+
+      const row = [];
+      tr.querySelectorAll("td").forEach(td => {
+        const input = td.querySelector("input");
+        row.push(input ? input.value : td.innerText);
+      });
+
+      body.push(row);
     });
-    body.push(row);
-  });
 
   doc.autoTable({
     startY: 28,
@@ -185,12 +217,9 @@ window.gerarPDF = function () {
     styles: { fontSize: 8, halign: "center" }
   });
 
-  let y = doc.lastAutoTable.finalY + 10;
-  doc.text("Observação:", 14, y);
-  doc.text(observacao || "-", 14, y + 6);
-
   doc.save("fechamento-diarias.pdf");
 };
+
 
 /* ================= AUXILIAR ================= */
 function formatarData(data) {
